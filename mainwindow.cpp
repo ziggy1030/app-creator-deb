@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->lineEdit_snapname->setText("Onshape");
+    ui->lineEdit_snapname->setText("qortal-ui");
     PackageHandle* pkg = new PackageHandle;
 
     //主窗口发送deb包路径，deb对象接收并处理

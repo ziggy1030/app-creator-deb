@@ -86,7 +86,7 @@ QMap<QString, QString> PackageHandle::FilteringInfo(QByteArray snap_info,QString
     QJsonObject channel_map;
     QString ar;
     //type获取QJsonObject的value个数
-    for (int i = 0; i < JSON_obj.value("channel-map").type() - 1; i++) {
+    for (int i = 0; i < JSON_obj.value("channel-map").type(); i++) {
         channel_map = JSON_obj.value("channel-map")[i].toObject();
          ar = channel_map.value("channel").toObject().value("architecture").toString();
          if(ar == arch_){
@@ -180,7 +180,7 @@ void PackageHandle::SnapHand(QString app_name, QString arch)
         return;
     }
     //1234567
-//    DownloadSnap(map_["url"], map_["name"], map_["architecture"]);
+    DownloadSnap(map_["url"], map_["name"], map_["architecture"]);
     m_filename = map_["name"] + "_" + map_["architecture"] + ".snap";
     UnsquashfsSnap(m_filename);
     ReadDebian(m_snap_src_path);
@@ -249,11 +249,24 @@ void PackageHandle::ReadDesktopFile(QString path)
                 QStringList yamllist = yamlstr.split(QRegExp("[\n]"),QString::SkipEmptyParts);
                 for (int j = 0; j < yamllist.size(); j++) {
                     if(yamllist[j].contains("command:")){
-                        //TODO: 如果路径有带参数xxx xxx xxx格式，需要特殊处理
-                        //Exec=/opt/apps//files/  bin/electron-launch $SNAP/usr/lib/slack/slack --no-sandbox
+
                         if(yamllist[j].contains("$SNAP/")){
                             m_execPath = "/opt/apps/" + m_map["pkg_name"] + "/files/"+yamllist[j].split(":")[1].split("$SNAP/")[1].trimmed();
-                        }else {
+                        }
+                        //TODO: 如果路径有带参数xxx xxx xxx格式，需要特殊处理
+                        //Exec=/opt/apps//files/  bin/electron-launch $SNAP/usr/lib/slack/slack --no-sandbox
+                        else if(yamllist[j].contains("command.sh")){
+                            QString commandstr = ReadText(path+"/command.sh");
+                            QStringList commandlist = commandstr.split(QRegExp("[\n]"),QString::SkipEmptyParts);
+                            for (int k = 0; k < commandlist.size(); k++) {
+                                if(commandlist[k].contains("--no-sandbox")){
+                                    m_execPath = "/opt/apps/" + m_map["pkg_name"] + "/files/"+commandlist[k].split(" ")[4].replace("$SNAP/","").trimmed().replace("\"","") + " --no-sandbox";
+                                }else {
+                                    m_execPath = "/opt/apps/" + m_map["pkg_name"] + "/files/"+commandlist[k];
+                                }
+                            }
+
+                        }else{
                             m_execPath = "/opt/apps/" + m_map["pkg_name"] + "/files/"+yamllist[j].split(":")[1].trimmed();
 
                         }
@@ -269,7 +282,7 @@ void PackageHandle::ReadDesktopFile(QString path)
 
                 m_iconname = fileinfo_.fileName();
                 //TODO: 重新编辑路径，并且要变更textchange的路径
-//                list[i].replace("${SNAP}","/opt/apps/" + m_map["pkg_name"] + "/entries/icons/");
+                //                list[i].replace("${SNAP}","/opt/apps/" + m_map["pkg_name"] + "/entries/icons/");
                 list[i] = "Icon=/opt/apps/" + m_map["pkg_name"] + "/entries/icons/" + m_iconname;
             }
             desktop_byte.append(list[i]);
@@ -442,6 +455,7 @@ void PackageHandle::BuildDebPkg(QMap<QString,QString> map_)
         }else {
             qInfo() << "架构有误" << __LINE__ << __FUNCTION__;
         }
+
         QString buildStr = QString("dpkg-deb -b %1 %2").arg(path_).arg(m_map["outPath"]).arg(m_map["debname"]);
         CallCMD(buildStr);
         emit BuildFinish();
@@ -460,7 +474,8 @@ void PackageHandle::InitNewDir(QString path_)
 
     //2. 移动旧目录到新目录中
     //2. 移动旧目录到新目录中
-    QString cpiconStr = QString("cp %1 %2/opt/apps/%3/entries/icons/").arg(m_icon_abpath).arg(path_).arg(m_map["pkg_name"]);
+    QString cpiconStr = QString("cp %1 %2/opt/apps/%3/entries/icons/ && cp %1 %4").arg(m_icon_abpath).arg(path_).arg(m_map["pkg_name"]).arg(m_map["outPath"]);
+    qInfo() << m_map["outPath"]+"/"+m_iconname;
     CallCMD(cpiconStr);
 
     QString mvStr = QString("cd %1 && mv `ls |grep -v opt` opt/apps/%2/files/").arg(path_).arg(m_map["pkg_name"]);
