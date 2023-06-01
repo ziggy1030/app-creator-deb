@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->lineEdit_snapname->setText("qortal-ui");
+    ui->lineEdit_snapname->setText("lightning-talk-gong");
     PackageHandle* pkg = new PackageHandle;
 
     //主窗口发送deb包路径，deb对象接收并处理
@@ -62,7 +62,7 @@ MainWindow::MainWindow(QWidget *parent) :
         if(info_map_["architecture"] == "amd64"){
             ui->lineEdit_arch->setText("X86");
         }else if (info_map_["architecture"] == "arm64") {
-            ui->lineEdit_arch->setText("X86");
+            ui->lineEdit_arch->setText("ARM");
         }else {
             qInfo() << "架构错误" << __LINE__ << __FUNCTION__;
         }
@@ -85,10 +85,14 @@ MainWindow::MainWindow(QWidget *parent) :
                 }
             }
             if (list[i].contains("Version")) {
-                ui->lineEdit_version->setText(list[i].split(": ")[1]);
+                if(ui->lineEdit_version->text().isEmpty()){
+                    ui->lineEdit_version->setText(list[i].split(": ")[1]);
+                }
             }
             if (list[i].contains("Architecture")) {
-                ui->lineEdit_arch->setText(list[i].split(": ")[1]);
+                if(ui->lineEdit_arch->text().isEmpty()){
+                    ui->lineEdit_arch->setText(list[i].split(": ")[1]);
+                }
             }
         }
 
@@ -101,6 +105,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->textEdit_info->setText(bytes);
     });
 
+    //包名变动时
     connect(ui->lineEdit_pkgname,&QLineEdit::textChanged,this,[=]{
         qInfo() << "lineEdit_pkgname-textchange";
         //同步修改输出deb名称
@@ -155,6 +160,8 @@ MainWindow::MainWindow(QWidget *parent) :
         }
 
     });
+
+    //版本变动时，输出的deb包名的版本号也随之变动
     connect(ui->lineEdit_version,&QLineEdit::textChanged,ui->lineEdit_debname,[=]{
         qInfo() << "lineEdit_version-textchange";
         if(!ui->lineEdit_pkgname->text().isEmpty() &&
@@ -165,6 +172,7 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     });
 
+    //架构变动时，输出的deb包名的架构也随之变动
     connect(ui->lineEdit_arch,&QLineEdit::textChanged,ui->lineEdit_debname,[=]{
         qInfo() << "lineEdit_arch-textchange";
         if(!ui->lineEdit_pkgname->text().isEmpty() &&

@@ -237,7 +237,7 @@ void PackageHandle::ReadControlFile(QString path)
 
 void PackageHandle::ReadDesktopFile(QString path)
 {
-    QString desktop_path = SearchFile(path,".desktop");
+    QString desktop_path = SearchFile(path + "/meta",".desktop");
     qInfo() << "desktop_path"<<desktop_path;
     QByteArray desktop_byte;
     if(!desktop_path.isEmpty()){
@@ -250,7 +250,10 @@ void PackageHandle::ReadDesktopFile(QString path)
                 for (int j = 0; j < yamllist.size(); j++) {
                     if(yamllist[j].contains("command:")){
 
-                        if(yamllist[j].contains("$SNAP/")){
+                        //执行命令中包含$SNAP/字符，则
+                        if(yamllist[j].contains("$SNAP/") && yamllist[j].contains("--no-sandbox")){
+                            m_execPath = "/opt/apps/" + m_map["pkg_name"] + "/files/"+yamllist[j].split(":")[1].split("$SNAP/")[1].split("--no-sandbox")[0].trimmed()+" --no-sandbox";
+                        }else if (yamllist[j].contains("$SNAP/")) {
                             m_execPath = "/opt/apps/" + m_map["pkg_name"] + "/files/"+yamllist[j].split(":")[1].split("$SNAP/")[1].trimmed();
                         }
                         //TODO: 如果路径有带参数xxx xxx xxx格式，需要特殊处理
@@ -447,16 +450,9 @@ void PackageHandle::BuildDebPkg(QMap<QString,QString> map_)
 
 
         //4. 打包dpkg-deb -b
-        QString pkgarch;
-        if(m_map["arch"] == "amd64"){
-            pkgarch = "X86";
-        }else if (m_map["arch"] == "arm64") {
-            pkgarch = "ARM";
-        }else {
-            qInfo() << "架构有误" << __LINE__ << __FUNCTION__;
-        }
 
-        QString buildStr = QString("dpkg-deb -b %1 %2").arg(path_).arg(m_map["outPath"]).arg(m_map["debname"]);
+        QString buildStr = QString("dpkg-deb -b %1 %2/%3").arg(path_).arg(m_map["outPath"]).arg(m_map["debname"]);
+        qInfo() << m_map["outPath"] << "----" << m_map["debname"];
         CallCMD(buildStr);
         emit BuildFinish();
 }
