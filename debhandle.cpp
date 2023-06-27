@@ -19,8 +19,6 @@ void DebHandle::ExtractDeb(QString path)
     qInfo() << m_file_path;
     qInfo() << "Extractingdeb over";
 
-    qInfo() << "Extractingdeb over";
-
 
     ReadDebianInfo();
 

@@ -86,6 +86,7 @@ QMap<QString, QString> PackageHandle::FilteringInfo(QByteArray snap_info,QString
     QJsonObject channel_map;
     QString ar;
     //type获取QJsonObject的value个数
+
     for (int i = 0; i < JSON_obj.value("channel-map").type(); i++) {
         channel_map = JSON_obj.value("channel-map")[i].toObject();
          ar = channel_map.value("channel").toObject().value("architecture").toString();
@@ -237,6 +238,7 @@ void PackageHandle::ReadControlFile(QString path)
 
 void PackageHandle::ReadDesktopFile(QString path)
 {
+
     QString desktop_path = SearchFile(path + "/meta",".desktop");
     qInfo() << "desktop_path"<<desktop_path;
     QByteArray desktop_byte;
@@ -249,6 +251,7 @@ void PackageHandle::ReadDesktopFile(QString path)
                 QStringList yamllist = yamlstr.split(QRegExp("[\n]"),QString::SkipEmptyParts);
                 for (int j = 0; j < yamllist.size(); j++) {
                     if(yamllist[j].contains("command:")){
+
 
                         //执行命令中包含$SNAP/字符，则
                         if(yamllist[j].contains("$SNAP/") && yamllist[j].contains("--no-sandbox")){
@@ -285,6 +288,7 @@ void PackageHandle::ReadDesktopFile(QString path)
 
                 m_iconname = fileinfo_.fileName();
                 //TODO: 重新编辑路径，并且要变更textchange的路径
+
                 //                list[i].replace("${SNAP}","/opt/apps/" + m_map["pkg_name"] + "/entries/icons/");
                 list[i] = "Icon=/opt/apps/" + m_map["pkg_name"] + "/entries/icons/" + m_iconname;
             }
@@ -450,6 +454,15 @@ void PackageHandle::BuildDebPkg(QMap<QString,QString> map_)
 
 
         //4. 打包dpkg-deb -b
+        QString pkgarch;
+        if(m_map["arch"] == "amd64"){
+            pkgarch = "X86";
+        }else if (m_map["arch"] == "arm64") {
+            pkgarch = "ARM";
+        }else {
+            qInfo() << "架构有误" << __LINE__ << __FUNCTION__;
+        }
+
 
         QString buildStr = QString("dpkg-deb -b %1 %2/%3").arg(path_).arg(m_map["outPath"]).arg(m_map["debname"]);
         qInfo() << m_map["outPath"] << "----" << m_map["debname"];
@@ -469,7 +482,7 @@ void PackageHandle::InitNewDir(QString path_)
     destDir.mkpath("files");
 
     //2. 移动旧目录到新目录中
-    //2. 移动旧目录到新目录中
+
     QString cpiconStr = QString("cp %1 %2/opt/apps/%3/entries/icons/ && cp %1 %4").arg(m_icon_abpath).arg(path_).arg(m_map["pkg_name"]).arg(m_map["outPath"]);
     qInfo() << m_map["outPath"]+"/"+m_iconname;
     CallCMD(cpiconStr);
